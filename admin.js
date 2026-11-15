@@ -5,6 +5,9 @@
   const dashboard = document.getElementById('dashboard');
   const loginForm = document.getElementById('login-form');
   const loginMessage = document.getElementById('login-message');
+  const resetPasswordPanel = document.getElementById('reset-password-panel');
+  const resetPasswordForm = document.getElementById('reset-password-form');
+  const resetPasswordMessage = document.getElementById('reset-password-message');
   const entryForm = document.getElementById('entry-form');
   const entryMessage = document.getElementById('entry-message');
   const fileInput = document.getElementById('item-file');
@@ -246,6 +249,37 @@
   }
 
   client = window.supabase.createClient(config.url, config.anonKey);
+  document.getElementById('forgot-password').addEventListener('click', async () => {
+    const email = document.getElementById('login-email').value.trim();
+    if (!email) {
+      return message(loginMessage, 'Enter your admin email first, then click Forgot password.', true);
+    }
+    const button = document.getElementById('forgot-password');
+    setBusy(button, true, 'Forgot password? Send reset email');
+    const { error } = await client.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+    setBusy(button, false, 'Forgot password? Send reset email');
+    if (error) return message(loginMessage, error.message, true);
+    message(loginMessage, 'Password reset email sent. Check your inbox and spam folder, then open the reset link on this same website.');
+  });
+
+  resetPasswordForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = resetPasswordForm.querySelector('button[type="submit"]');
+    const password = document.getElementById('new-admin-password').value;
+    if (password.length < 8) return message(resetPasswordMessage, 'Use at least 8 characters.', true);
+    setBusy(button, true, 'Save new password ↗');
+    const { error } = await client.auth.updateUser({ password });
+    setBusy(button, false, 'Save new password ↗');
+    if (error) return message(resetPasswordMessage, error.message, true);
+    await client.auth.signOut();
+    resetPasswordPanel.hidden = true;
+    loginPanel.hidden = false;
+    resetPasswordForm.reset();
+    message(loginMessage, 'Password updated. You can now sign in with your new password.');
+  });
+
   loginForm.addEventListener('submit', async event => {
     event.preventDefault();
     const button = loginForm.querySelector('button[type="submit"]');
@@ -275,7 +309,14 @@
   client.auth.getSession().then(async ({data}) => {
     if (data.session?.user) await verifyOwner(data.session.user);
   });
-  client.auth.onAuthStateChange((_event, session) => {
+  client.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      loginPanel.hidden = true;
+      dashboard.hidden = true;
+      resetPasswordPanel.hidden = false;
+      message(resetPasswordMessage, 'Recovery link verified. Set your new password below.');
+      return;
+    }
     if (!session) {
       dashboard.hidden = true;
       loginPanel.hidden = false;
