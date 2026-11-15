@@ -111,6 +111,7 @@
     editing = entry;
     document.getElementById('entry-id').value = entry.id;
     typeInput.value = entry.item_type;
+    typeInput.disabled = true;
     document.getElementById('item-title').value = entry.title || '';
     document.getElementById('item-description').value = entry.description || '';
     document.getElementById('item-organization').value = entry.organization || '';
@@ -133,6 +134,7 @@
     entryForm.reset();
     document.getElementById('entry-id').value = '';
     editing = null;
+    typeInput.disabled = false;
     currentFile.hidden = true;
     currentFile.textContent = '';
     document.getElementById('form-heading').textContent = 'Add to portfolio';
@@ -162,6 +164,7 @@
     const originalLabel = editing ? 'Save changes ↗' : 'Publish to portfolio ↗';
     setBusy(button, true, originalLabel);
     message(entryMessage, 'Saving your entry…');
+    let newlyUploadedPath = null;
     try {
       const type = typeInput.value;
       const file = fileInput.files[0];
@@ -174,7 +177,10 @@
       if (credential && !safeUrl(credential)) throw new Error('Enter a valid http(s) verification URL.');
 
       let asset = { path: editing?.asset_path || null, url: editing?.asset_url || null };
-      if (file) asset = await uploadAsset(file, type);
+      if (file) {
+        asset = await uploadAsset(file, type);
+        newlyUploadedPath = asset.path;
+      }
       const technologies = document.getElementById('item-technologies').value
         .split(',').map(x => x.trim()).filter(Boolean).slice(0,20);
       const record = {
@@ -193,16 +199,24 @@
         status: 'published'
       };
       if (editing) {
+        const previousAssetPath = editing.asset_path;
         const { error } = await client.from('portfolio_items').update(record).eq('id', editing.id);
         if (error) throw error;
+        if (file && previousAssetPath) {
+          await client.storage.from('portfolio-assets').remove([previousAssetPath]);
+        }
       } else {
         const { error } = await client.from('portfolio_items').insert(record);
         if (error) throw error;
       }
+      newlyUploadedPath = null;
       message(entryMessage, 'Published successfully! Your portfolio will show the new entry when refreshed.');
       resetForm();
       await loadEntries();
     } catch (error) {
+      if (newlyUploadedPath) {
+        await client.storage.from('portfolio-assets').remove([newlyUploadedPath]);
+      }
       message(entryMessage, error.message || 'Something went wrong while saving.', true);
     } finally {
       setBusy(button, false, document.getElementById('entry-id').value ? 'Save changes ↗' : 'Publish to portfolio ↗');
@@ -212,12 +226,11 @@
   async function deleteEntry(entry) {
     if (!window.confirm('Delete "' + entry.title + '" from your portfolio? This cannot be undone.')) return;
     try {
-      if (entry.asset_path) {
-        const { error: storageError } = await client.storage.from('portfolio-assets').remove([entry.asset_path]);
-        if (storageError) throw storageError;
-      }
       const { error } = await client.from('portfolio_items').delete().eq('id', entry.id);
       if (error) throw error;
+      if (entry.asset_path) {
+        await client.storage.from('portfolio-assets').remove([entry.asset_path]);
+      }
       if (editing?.id === entry.id) resetForm();
       message(entryMessage, 'Entry deleted from your portfolio.');
       await loadEntries();
