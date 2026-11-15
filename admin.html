@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#080d18">
+  <title>Omkar Control Center | Portfolio Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+  <header class="admin-header">
+    <a class="logo" href="index.html"><b>O</b>B.</a>
+    <div class="admin-header-right"><span class="admin-pill">PRIVATE ADMIN</span><a class="admin-back" href="index.html">← View portfolio</a></div>
+  </header>
+  <main class="admin-main">
+    <section class="admin-intro">
+      <p class="eyebrow">OMKAR / CONTROL CENTER</p>
+      <h1>Manage your <em>work.</em></h1>
+      <p class="sub">Upload a project or certificate. Once saved, it is published automatically to your portfolio.</p>
+    </section>
+
+    <section id="setup-warning" class="admin-panel notice" hidden>
+      <h2>One-time setup required</h2>
+      <p>Connect your Supabase project in <code>supabase-config.js</code>, then complete the steps in <code>SUPABASE-SETUP.md</code>.</p>
+    </section>
+
+    <section id="login-panel" class="admin-panel login-panel">
+      <div class="panel-heading"><div><p class="eyebrow">OWNER ACCESS</p><h2>Sign in</h2></div><span class="lock-icon">⌑</span></div>
+      <p class="sub">This dashboard is reserved for the portfolio owner. There is no public sign-up.</p>
+      <form id="login-form">
+        <label for="login-email">Email address</label>
+        <input id="login-email" type="email" autocomplete="username" required placeholder="Your admin email">
+        <label for="login-password">Password</label>
+        <input id="login-password" type="password" autocomplete="current-password" required placeholder="Your password">
+        <button class="btn primary admin-submit" type="submit">Sign in securely ↗</button>
+      </form>
+      <p id="login-message" class="form-message" role="status"></p>
+    </section>
+
+    <section id="dashboard" hidden>
+      <div class="dashboard-top">
+        <div><p class="eyebrow">OWNER WORKSPACE</p><h2>Your upload dashboard</h2><p id="signed-in-as" class="sub"></p></div>
+        <button id="sign-out" class="btn" type="button">Sign out</button>
+      </div>
+      <div class="dashboard-stats">
+        <article class="stat-card"><span>Published entries</span><strong id="entry-count">0</strong></article>
+        <article class="stat-card"><span>Projects</span><strong id="project-count">0</strong></article>
+        <article class="stat-card"><span>Certificates</span><strong id="certificate-count">0</strong></article>
+      </div>
+
+      <div class="admin-columns">
+        <section class="admin-panel">
+          <div class="panel-heading"><div><p class="eyebrow">UPLOAD / EDIT</p><h2 id="form-heading">Add to portfolio</h2></div><span class="upload-icon">＋</span></div>
+          <div class="auto-publish"><span class="live-dot"></span><span><strong>Auto-publish is ON</strong><small>Saved entries appear on your live portfolio.</small></span></div>
+          <form id="entry-form">
+            <input id="entry-id" type="hidden">
+            <label for="item-type">What are you adding?</label>
+            <select id="item-type"><option value="project">Project</option><option value="certificate">Certificate</option></select>
+            <label for="item-title">Title <span>*</span></label>
+            <input id="item-title" required maxlength="120" placeholder="e.g. Student Attendance System">
+            <label for="item-description">Description <span>*</span></label>
+            <textarea id="item-description" required maxlength="700" rows="4" placeholder="What did you build or learn?"></textarea>
+            <label for="item-organization">Organization / issuer</label>
+            <input id="item-organization" maxlength="120" placeholder="e.g. Infosys, College, or client">
+            <label for="item-date">Completion / issue date</label>
+            <input id="item-date" type="date">
+            <label for="item-technologies">Technologies <small>(comma-separated; projects)</small></label>
+            <input id="item-technologies" placeholder="HTML, CSS, JavaScript">
+            <label for="item-github">GitHub repository URL <small>(projects)</small></label>
+            <input id="item-github" type="url" placeholder="https://github.com/...">
+            <label for="item-live">Live demo URL <small>(projects)</small></label>
+            <input id="item-live" type="url" placeholder="https://...">
+            <label for="item-credential">Credential verification URL <small>(optional)</small></label>
+            <input id="item-credential" type="url" placeholder="https://...">
+            <label for="item-file">Upload file <span id="file-required">*</span></label>
+            <input id="item-file" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" >
+            <p id="file-help" class="field-help">For projects: add a screenshot (PNG, JPG or WEBP). For certificates: upload the certificate PDF or image.</p>
+            <p id="current-file" class="current-file" hidden></p>
+            <button class="btn primary admin-submit" type="submit" id="save-entry">Publish to portfolio ↗</button>
+            <button class="btn cancel-edit" type="button" id="cancel-edit" hidden>Cancel editing</button>
+          </form>
+          <p id="entry-message" class="form-message" role="status"></p>
+        </section>
+
+        <section class="admin-panel entries-panel">
+          <div class="panel-heading"><div><p class="eyebrow">YOUR CONTENT</p><h2>Published entries</h2></div><span class="count-chip" id="list-count">0</span></div>
+          <p class="sub">Edit an entry or remove it from the public portfolio.</p>
+          <div id="entries-list" class="entries-list"><p class="empty-state">Your uploaded entries will appear here.</p></div>
+        </section>
+      </div>
+      <p class="privacy-note">Only upload documents you intend to make public. Files added here are served from a public portfolio-assets bucket so visitors can view published certificates and project media.</p>
+    </section>
+  </main>
+  <footer class="bottom admin-footer"><a class="logo" href="index.html"><b>O</b>B.</a><span>Private portfolio workspace · Omkar Bhekane</span><a href="index.html">Back to portfolio ↑</a></footer>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
