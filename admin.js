@@ -249,19 +249,29 @@
   }
 
   client = window.supabase.createClient(config.url, config.anonKey);
-  document.getElementById('forgot-password').addEventListener('click', async () => {
+  const forgotPasswordButton = document.getElementById('forgot-password');
+  forgotPasswordButton.addEventListener('click', async event => {
+    event.preventDefault();
     const email = document.getElementById('login-email').value.trim();
     if (!email) {
-      return message(loginMessage, 'Enter your admin email first, then click Forgot password.', true);
+      message(loginMessage, 'First enter your admin email address above.', true);
+      document.getElementById('login-email').focus();
+      return;
     }
-    const button = document.getElementById('forgot-password');
-    setBusy(button, true, 'Forgot password? Send reset email');
-    const { error } = await client.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + window.location.pathname
-    });
-    setBusy(button, false, 'Forgot password? Send reset email');
-    if (error) return message(loginMessage, error.message, true);
-    message(loginMessage, 'Password reset email sent. Check your inbox and spam folder, then open the reset link on this same website.');
+    setBusy(forgotPasswordButton, true, 'Sending reset email…');
+    message(loginMessage, 'Connecting to Supabase Auth…');
+    try {
+      const { data, error } = await client.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname
+      });
+      if (error) throw error;
+      message(loginMessage, 'Reset request accepted. Check your inbox and spam folder for the password reset email.');
+    } catch (error) {
+      console.error('Password reset request failed:', error);
+      message(loginMessage, 'Could not send reset email: ' + (error?.message || 'Unknown error. Check the browser console.'), true);
+    } finally {
+      setBusy(forgotPasswordButton, false, 'Forgot password? Send reset email');
+    }
   });
 
   resetPasswordForm.addEventListener('submit', async event => {
